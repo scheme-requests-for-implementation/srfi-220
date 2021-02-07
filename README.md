@@ -204,6 +204,20 @@ It also varies whether or not keywords are disjoint from symbols.
 TODO: Should this SRFI specify that keywords are normalized into
 symbols?
 
+### Extending the formal syntax of R7RS
+
+R7RS section `7.1. Formal syntax` add a new case to the definition of
+`<directive>`:
+
+    #! <intraline whitespace>+ <directive datums>
+
+where
+
+    <directive datums> = | <datum> <intraline whitespace>* <directive datums>
+
+and `<datum>` in this case contains no newlines in the datum or
+surrounding whitespace.
+
 ## Examples
 
 For clarity, all Scheme symbols in the examples are written using the
@@ -277,7 +291,7 @@ Directive:
 Read as S-expression:
 
     (|-*-| |mode:| |scheme| |-*-| |vim:| |set| |ft=scheme| |:|)
-    
+
 ## Implementation
 
 ## Acknowledgements
