@@ -1,0 +1,65 @@
+diff --git a/src/read.c b/src/read.c
+index c9327e2ee..04d7efebb 100644
+--- a/src/read.c
++++ b/src/read.c
+@@ -1648,31 +1648,36 @@ static ScmObj read_shebang(ScmPort *port, ScmReadContext *ctx)
+        introduces #!<identifier> token).  There's no way for just one
+        parser that strictly covers both situation.
+     */
+-    int c2 = Scm_GetcUnsafe(port);
+-    if (Scm_PortBytes(port) == 3 && (c2 == '/' || c2 == ' ' || c2 == '\n')) {
+-        /* shebang */
+-        for (;;) {
+-            if (c2 == '\n') return SCM_UNDEFINED;
+-            if (c2 == EOF) return SCM_EOF;
+-            c2 = Scm_GetcUnsafe(port);
+-        }
+-        /*NOTREACHED*/
+-    } else {
+-        ScmObj id = read_immediate_symbol(port, c2, TRUE, "#!", ctx);
+-        (void)SCM_INTERNAL_MUTEX_LOCK(hashBangData.mutex);
+-        ScmObj e = Scm_HashTableRef(hashBangData.table, id, SCM_FALSE);
+-        (void)SCM_INTERNAL_MUTEX_UNLOCK(hashBangData.mutex);
+-        if (SCM_FALSEP(e)) {
+-            Scm_Warn("Ignoring unrecognized hash-bang directive: #!%S", id);
+-            return SCM_UNDEFINED;
+-        }
+-        /* Reader directive may return zero or one value.  When it returns
+-           no values, we call Scm_VMSetResult to adjust the number of values.
+-         */
+-        ScmObj r = Scm_ApplyRec3(e, id, SCM_OBJ(port), SCM_OBJ(ctx));
+-        if (Scm_VMGetNumResults(Scm_VM()) == 1) return r;
+-        else { Scm_VMSetResult(SCM_UNDEFINED); return SCM_UNDEFINED; }
++    ScmSize orig_line = Scm_PortLine(port);
++    ScmObj list = SCM_NIL;
++    for (;;) {
++        int c = skipws(port, ctx);
++        if (c == '\n') break;
++        Scm_UngetcUnsafe(c, port);
++        if (Scm_PortLine(port) != orig_line) break;
++        ScmObj element = read_item(port, ctx);
++        if (element == SCM_EOF) break;
++        list = Scm_Cons(element, list);
++        if (Scm_PortLine(port) != orig_line) break;
++    }
++    list = Scm_Reverse(list);
++    (void)SCM_INTERNAL_MUTEX_LOCK(hashBangData.mutex);
++    ScmObj id = list;
++    if (SCM_PAIRP(list) && SCM_SYMBOLP(SCM_CAR(list)) && SCM_NULLP(SCM_CDR(list))) {
++        id = SCM_CAR(list);
+     }
++    ScmObj e = Scm_HashTableRef(hashBangData.table, id, SCM_FALSE);
++    (void)SCM_INTERNAL_MUTEX_UNLOCK(hashBangData.mutex);
++    if (SCM_FALSEP(e)) {
++        Scm_Warn("Ignoring unrecognized hash-bang directive: #!%A", list);
++        return SCM_UNDEFINED;
++    }
++    /* Reader directive may return zero or one value.  When it returns
++       no values, we call Scm_VMSetResult to adjust the number of values.
++    */
++    ScmObj r = Scm_ApplyRec3(e, id, SCM_OBJ(port), SCM_OBJ(ctx));
++    if (Scm_VMGetNumResults(Scm_VM()) == 1) return r;
++    else { Scm_VMSetResult(SCM_UNDEFINED); return SCM_UNDEFINED; }
+ }
+ 
+ /*----------------------------------------------------------------
