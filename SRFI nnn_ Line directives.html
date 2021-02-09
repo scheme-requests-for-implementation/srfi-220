@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>SRFI nnn: Line directives</title>
+</head>
+<body>
+  <h1>SRFI nnn: Line directives</h1>
+  <p>by Lassi Kortela</p>
+  <h2>Status</h2>
+  <p>Draft</p>
+  <h2>Abstract</h2>
+  <p>Many language-agnostic programming tools rely on specially
+  formatted source code comments to annotate the code with
+  metadata. Such "magic comments" are hard for both humans and
+  computers to parse reliably, as the purpose of a comment is to be
+  free-form text that is not interpreted by machine.</p>
+  <p>This SRFI extends the standard Scheme directive syntax
+  (<code>#!</code>) to support <em>line directives</em>. They look
+  like magic comments to language-agnostic tools but read as
+  S-expressions in Scheme, combining the portability of magic
+  comments with the well-defined syntax and easy parsing of
+  ordinary Scheme code.</p>
+  <h2>Issues</h2>
+  <ul>
+    <li>Should this SRFI specify that keywords are normalized into
+    symbols?</li>
+  </ul>
+  <h2>Rationale</h2>
+  <p>Like other Lisp dialects, Scheme uses S-expressions for its
+  surface syntax. S-expressions are naturally extensible: just use
+  a particular symbol as the head of a list to indicate what's
+  coming up in the rest of the list. Ideally we would use
+  S-expressions not only for data, but also to write metadata such
+  as license information, character encoding, and editor
+  settings.</p>
+  <p>However, most programming languages have a much less regular
+  and more ad-hoc syntax and do not have easily extensible
+  syntactic constructs. To the extent that extensible constructs
+  exist, the culture to use them is lacking. As a result, most
+  languages eventually paint themselves into a corner when the time
+  comes to augment source code with metadata. As a last resort, the
+  metadata is snuck into comments which are ignored by the
+  compiler. This is unfortunate as comments are meant for natural
+  language text and deliberately have no syntactic structure to be
+  parsed, checked, and enforced by the compiler. That makes tools
+  dealing with magic comments very brittle, and their precise
+  behavior difficult to understand.</p>
+  <p>For interoperability with language-agnostic tools such as text
+  editors and license checkers, we need to play along with the mess
+  caused by the lack of foresight in other languages. However, we
+  can salvage a bit of rigor by parsing the directives that other
+  languages put in a comment as a sequence of S-expressions in
+  Scheme. Happily, the character set permitted in Scheme and Lisp
+  symbols is so wide that most magic comments (which tend to
+  contain alphanumeric characters and some punctuation delimited by
+  whitespace) will naturally split into a list of symbols.</p>
+  <p>If we can turn each directive into a list of symbols, it
+  becomes easy to programmatically find all the directives in a
+  Scheme source file. A Scheme implementation can process the
+  directives it understands, ignore the rest, and optionally let
+  users install custom hooks to process directives.</p>
+  <h3>Symbols and keywords</h3>
+  <p>Some Scheme implementations have read syntax for
+  <em>keywords</em>. The following syntaxes are known to exist:</p>
+  <ul>
+    <li><code>foo:</code></li>
+    <li><code>:foo</code></li>
+    <li><code>#:foo</code></li>
+  </ul>
+  <p>It also varies whether or not keywords are disjoint from
+  symbols.</p>
+  <p>The presence of keyword syntax may cause some tokens that are
+  read as symbols in most Scheme implementations to be read as
+  keywords in others. Language-agnostic directives tend to use
+  colons a lot, which may cause them to be parsed differently in
+  Scheme implementations with keywords.</p>
+  <h3>Why use #! as a directive marker</h3>
+  <p>In Scheme, a semicolon (<code>;</code>) starts a comment that
+  runs until the end of the line. In RnRS parlance, this is called
+  a <em>line comment</em>. An identifier following <code>#!</code>
+  is called a <em>directive</em>. Combining these two terms, we
+  arrive at <em>line directive</em>: a directive that runs until
+  the end of the line.</p>
+  <p><code>#!</code> is the best choice for a directive marker
+  because most Scheme script readers already need special handling
+  for <code>#!</code> appearing at the very beginning of a source
+  file since <code>#!</code> is the Unix indicator that says which
+  interpreter runs the script. (When the first line of a Unix
+  script starts with <code>#!</code> it is often called the
+  "shebang line", or the "hashbang line".)</p>
+  <p><code>#!</code> is also the only syntax used for reader
+  directives in standard Scheme, and a declaration of something
+  like character encoding is conceptually close to such
+  directives.</p>
+  <h3>Survey of #! syntax in Lisp standards</h3>
+  <h4>Common Lisp</h4>
+  <p>The ANSI Common Lisp standard, section <a href=
+  "http://clhs.lisp.se/Body/02_dh.htm">2.4.8 Syntax -&gt; Standard
+  Macro Characters -&gt; Sharpsign</a>, says the dispatch macro
+  character <code>#!</code> is explicitly reserved to the user. No
+  conforming implementation defines it.</p>
+  <h4>ISLisp</h4>
+  <p>The <a href=
+  "https://web.archive.org/web/20160313021746/http://islisp.info/Documents/PDF/islisp-2007-03-17-pd-v23.pdf">
+  ISLisp standard</a> (2007) uses <code>#</code> as a dispatch
+  macro character like Common Lisp and Scheme. It does not appear
+  to use <code>#!</code> for anything.</p>
+  <h4>Scheme</h4>
+  <p>Scheme standards treat <code>#!</code> as a magic marker
+  generally followed by a directive that looks like an identifier
+  but serves a special purpose distinct from an ordinary identifier
+  with the same spelling.</p>
+  <ul>
+    <li>R<sup>2</sup>RS uses <code>#!true</code> and
+    <code>#!false</code> for booleans and <code>#!null</code> for
+    the empty list.</li>
+    <li>R<sup>3</sup>RS does not use <code>#!</code>.</li>
+    <li>R<sup>4</sup>RS does not use <code>#!</code>.</li>
+    <li>R<sup>5</sup>RS does not use <code>#!</code>.</li>
+    <li>R<sup>6</sup>RS uses <code>#!r6rs</code> and permits any
+    other identifier.</li>
+    <li>R<sup>7</sup>RS uses <code>#!fold-case</code> and
+    <code>#!no-fold-case</code>.</li>
+  </ul>
+  <p>DSSSL and SRFI 89 use <code>#!key</code> and
+  <code>#!optional</code> and <code>#!rest</code> for lambda list
+  markers.</p>
+  <p>Various Scheme implementations use other identifiers following
+  <code>#!</code> for <a href=
+  "https://registry.scheme.org/#hash-bang-syntax">other
+  purposes</a>.</p>
+  <p>SRFI 22 (<em>Running Scheme Scripts on Unix</em>) recognizes
+  <code>#!</code> at the very beginning of the file as starting a
+  comment that runs until the end of the line.</p>
+  <p>Guile uses <code>#!...!#</code> anywhere in the file for
+  multi-line comments.</p>
+  <h3>Survey of #! syntax in non-standard Lisp dialects</h3>
+  <h4>AutoLisp</h4>
+  <p><code>#</code> is a constituent character in symbols.
+  <code>#!</code> does not appear to be used for anything.</p>
+  <h4>Clojure and ClojureScript</h4>
+  <p><code>#!</code> <strong>unofficially</strong> begins a comment
+  that runs until the end of the line.</p>
+  <p>Source: In the Clojure codebase, open
+  <code>src/jvm/clojure/lang/LispReader.java</code> and look for
+  <code>dispatchMacros['!'] = new CommentReader();</code>.</p>
+  <h4>Emacs Lisp</h4>
+  <p><code>#!</code> <strong>unofficially</strong> begins a comment
+  that runs until the end of the line.</p>
+  <p>Source: In the GNU Emacs codebase, open
+  <code>src/lread.c</code> and look inside <code>read1()</code>.
+  The comment in the source code says <code>#! appears at the
+  beginning of an executable file. Skip the first line.</code> but
+  the code actually skips <code>#!</code> anywhere in the file.</p>
+  <h4>Fennel</h4>
+  <p><code>#!</code> at the very <strong>beginning of the
+  file</strong> starts a comment that runs until the end of the
+  line.</p>
+  <p>Source: In the Fennel codebase, open
+  <code>src/fennel/parser.fnl</code> and look inside
+  <code>string-stream</code>. It replaces a <code>#!</code> at the
+  start of the file with a traditional <code>;;</code> comment
+  prefix.</p>
+  <h4>Hy</h4>
+  <p><code>#</code> begins a comment that runs until the end of the
+  line. By extension, <code>#!</code> does the same.</p>
+  <h4>Janet</h4>
+  <p><code>#</code> <strong>officially</strong> begins a comment
+  that runs until the end of the line. By extension,
+  <code>#!</code> does the same.</p>
+  <h4>Lisp Flavored Erlang</h4>
+  <p><code>#</code> is a constituent character in symbols.
+  Otherwise <code>#</code> does not appear to be used for anything,
+  and causes an <code>illegal character</code> syntax error.</p>
+  <h4>NewLisp</h4>
+  <p><code>#</code> <strong>officially</strong> begins a comment
+  that runs until the end of the line. By extension,
+  <code>#!</code> does the same.</p>
+  <h4>PicoLisp</h4>
+  <p><code>#</code> <strong>officially</strong> begins a comment
+  that runs until the end of the line. By extension,
+  <code>#!</code> does the same.</p>
+  <p>As a minor exception, <code>#</code> does not begin a comment
+  when it is part of a symbol.</p>
+  <h4>Rep (librep)</h4>
+  <p><code>#!...!#</code> at the very <strong>beginning of the
+  file</strong> is treated like a comment.</p>
+  <p>Elsewhere in the file <code>#!key</code> and
+  <code>#!optional</code> and <code>#!rest</code> are read in as
+  symbols, and <code>#!</code> followed by anything else is a
+  syntax error.</p>
+  <p>Source: In the <code>librep</code> codebase, open
+  <code>src/lisp.c</code> and look inside <code>readl()</code>.</p>
+  <h3>Conclusion</h3>
+  <p>Both major Lisp standards, Common Lisp and Scheme, are easily
+  amenable to adding a <code>#!</code> syntax. While Common Lisp
+  reserves <code>#!</code> for users, customizing the readtable is
+  quite rare in practice, and the pervasive use of <code>#!</code>
+  in Unix scripts makes it unlikely that Common Lisp users would
+  configure <code>#!</code> to do anything other than read a
+  comment.</p>
+  <p>Of the surveyed non-standard Lisp dialects, all except
+  AutoLisp, Fennel, Lisp Flavored Erlang, and Rep handle
+  <code>#!</code> anywhere in the file akin to a comment. Both
+  Fennel and Rep handle <code>#!</code> at the beginning of the
+  file as a comment, which means their syntax could easily be
+  amended to handle <code>#!</code> elsewhere in the file the same
+  way. AutoLisp and LFE permit <code>#</code> in symbols. LFE does
+  not permit <code>#</code> to start a symbol; perhaps AutoLisp
+  doesn't either. If so, adding special meaning to <code>#!</code>
+  would not present a conflict in these dialects either.</p>
+  <p>Guile and Rep use <code>#!...!#</code> comments, i.e. they
+  require a <code>!#</code> at the end. We can expect
+  <code>!#</code> to cause a read error in most Scheme
+  implementations. However, using <code>;!#</code> causes it to be
+  treated as an ordinary comment that runs until the end of the
+  line in those Schemes.</p>
+  <h2>Specification</h2>
+  <p>Scheme's read syntax is extended such that the two-character
+  sequence <code>#!</code> followed immediately by either a
+  newline, the end of the file, or one or more horizontal
+  whitespace charcters, causes a line directive to be read as
+  follows:</p>
+  <ol>
+    <li>Start accumulating elements into an empty list.</li>
+    <li>Skip whitespace and comments.</li>
+    <li>If at end of line or no longer on the original line,
+    return.</li>
+    <li>Read one form and accumulate at the end of the list.</li>
+    <li>If at end of line or no longer on the original line,
+    return.</li>
+    <li>Go to step 2.</li>
+  </ol>
+  <p>The accumulated list is returned as the Scheme representation
+  of the line directive. The list is not evaluated as Scheme code,
+  but may be either ignored or passed to an implementation-defined
+  facility for processing.</p>
+  <h3>Recursive line directives</h3>
+  <p>It is an error to write things like <code>#! #! foo</code> or
+  <code>#! outer (#! inner)</code>.</p>
+  <h3>Equivalence of <code>#! r6rs</code> with a space and
+  <code>#!r6rs</code> without</h3>
+  <p>It is implementation-defined whether <code>#! r6rs</code>
+  (with whitespace), once read, is processed the same way or in a
+  different way compared to <code>#!r6rs</code> (without
+  whitespace).</p>
+  <h3>Extending the formal syntax of R7RS</h3>
+  <p>R7RS section <code>7.1. Formal syntax</code> add a new case to
+  the definition of <code>&lt;directive&gt;</code>:</p>
+  <pre>#! &lt;intraline whitespace&gt;+ &lt;directive datums&gt;</pre>
+  <p>where</p>
+  <pre>&lt;directive datums&gt; = | &lt;datum&gt; &lt;intraline whitespace&gt;* &lt;directive datums&gt;</pre>
+  <p>and <code>&lt;datum&gt;</code> in this case contains no
+  newlines in the datum or surrounding whitespace.</p>
+  <h2>Examples</h2>
+  <p>For clarity, all Scheme symbols in the examples are written
+  using the <code>|vertical-bar|</code> syntax from R7RS.</p>
+  <h3>Unix script interpreter</h3>
+  <p>Line directive:</p>
+  <pre>#! /usr/bin/env fantastic-scheme</pre>
+  <p>Read as S-expression:</p>
+  <pre>(|/usr/bin/env| |fantastic-scheme|)</pre>
+  <h3>License information</h3>
+  <p>Line directives:</p>
+  <pre>#! Copyright © 2019, 2020 Just A. Schemer &lt;schemer@example.org&gt;
+#! SPDX-License-Identifier: GPL-3.0-or-later</pre>
+  <p>Read as S-expressions:</p>
+  <pre>(|Copyright| |©| 2019 (|unquote| 2020)
+ |Just| |A.| |Schemer| |&lt;schemer@example.org&gt;|)
+(|SPDX-License-Identifier:| |GPL-3.0-or-later|)</pre>
+  <h3>Text editor settings for Emacs</h3>
+  <p>Line directive:</p>
+  <pre>#! -*- mode: scheme -*-</pre>
+  <p>Read as S-expression:</p>
+  <pre>(|-*-| |mode:| |scheme| |-*-|)</pre>
+  <p>Line directives:</p>
+  <pre>#! Local Variables:
+#! mode: scheme
+#! coding: utf-8
+#! comment-column: 0
+#! End:</pre>
+  <p>Read as S-expressions:</p>
+  <pre>(|Local| |Variables:|)
+(|mode:| |scheme|)
+(|coding:| |utf-8|)
+(|comment-column:| 0)
+(|End:|)</pre>
+  <h3>Text editor settings for Vim</h3>
+  <p>Line directive:</p>
+  <pre>#! vim: ft=lisp tw=60 ts=2 expandtab fileencoding=euc-jp :</pre>
+  <p>Read as S-expression:</p>
+  <pre>(|vim:| |ft=lisp| |tw=60| |ts=2| |expandtab| |fileencoding=euc-jp| |:|)</pre>
+  <h3>Text editor settings for both Emacs and Vim</h3>
+  <p>Line directive:</p>
+  <pre>#! -*- mode: scheme -*- vim: set ft=scheme :</pre>
+  <p>Read as S-expression:</p>
+  <pre>(|-*-| |mode:| |scheme| |-*-| |vim:| |set| |ft=scheme| |:|)</pre>
+  <h2>Implementation</h2>
+  <p>A patch to the Gauche reader is attached. The patch makes it
+  write all line directives read from source files to the current
+  error port.</p>
+  <h2>Acknowledgements</h2>
+  <h2>References</h2>
+  <h2>Copyright</h2>
+  <p>Copyright (C) Lassi Kortela (2021).</p>
+  <p>Permission is hereby granted, free of charge, to any person
+  obtaining a copy of this software and associated documentation
+  files (the "Software"), to deal in the Software without
+  restriction, including without limitation the rights to use,
+  copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the
+  Software is furnished to do so, subject to the following
+  conditions:</p>
+  <p>The above copyright notice and this permission notice shall be
+  included in all copies or substantial portions of the
+  Software.</p>
+  <p>THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY
+  KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
+  WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE
+  AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+  HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+  WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+  FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+  OTHER DEALINGS IN THE SOFTWARE.</p>
+</body>
+</html>
