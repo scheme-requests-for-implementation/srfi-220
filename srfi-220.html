@@ -30,6 +30,30 @@
   S-expressions in Scheme, combining the portability of magic
   comments with the well-defined syntax and easy parsing of
   ordinary Scheme code.</p>
+  <h2>Withdrawal notice</h2>
+  <p>While this SRFI solves the problem it set out to solve, and
+  could be used as-is, the mailing list disagreed with it on
+  aesthetic grounds. No maintainers of established Scheme
+  implementations commented on the proposal.</p>
+  <p>Hence the SRFI is withdrawn. The document and the mailing list
+  archive stay as a reference for future discussions on the
+  topic.</p>
+  <p>Particular points of contention:</p>
+  <ol>
+    <li>Whether source code comments should ever be parsed or
+    not.</li>
+    <li>Whether magic comments are a horrible aesthetic blemish or
+    an acceptable tradeoff to embed external syntax into a
+    programming language.</li>
+    <li>Whether Scheme's <code>#!</code> read syntax should be kept
+    strictly for Scheme datums or overloaded to also handle
+    external syntax.</li>
+    <li>Whether Unix-style <code>#!/usr/bin/scheme</code> shebang
+    lines should be incorporated into Scheme syntax in some way, or
+    removed in a pre-processing step so the Scheme reader never
+    sees them. (Both approaches are currently in use by Scheme
+    implementations.)</li>
+  </ol>
   <h2>Issues</h2>
   <ul>
     <li>Should this SRFI specify that keywords are normalized into
