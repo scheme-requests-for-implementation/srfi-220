@@ -12,11 +12,13 @@
   <p>by Lassi Kortela</p>
   <h2 id="status">Status</h2>
 
-  <p>This SRFI is currently in <em>draft</em> status.  Here is <a href="https://srfi.schemers.org/srfi-process.html">an explanation</a> of each status that a SRFI can hold.  To provide input on this SRFI, please send email to <code><a href="mailto:srfi+minus+220+at+srfi+dotschemers+dot+org">srfi-220@<span class="antispam">nospam</span>srfi.schemers.org</a></code>.  To subscribe to the list, follow <a href="https://srfi.schemers.org/srfi-list-subscribe.html">these instructions</a>.  You can access previous messages via the mailing list <a href="https://srfi-email.schemers.org/srfi-220">archive</a>.</p>
+  <p>This SRFI is currently in <em>withdrawn</em> status.  Here is <a href="https://srfi.schemers.org/srfi-process.html">an explanation</a> of each status that a SRFI can hold.  To provide input on this SRFI, please send email to <code><a href="mailto:srfi+minus+220+at+srfi+dotschemers+dot+org">srfi-220@<span class="antispam">nospam</span>srfi.schemers.org</a></code>.  To subscribe to the list, follow <a href="https://srfi.schemers.org/srfi-list-subscribe.html">these instructions</a>.  You can access previous messages via the mailing list <a href="https://srfi-email.schemers.org/srfi-220">archive</a>.</p>
   <ul>
     <li>Received: 2021-02-07</li>
-    <li>60-day deadline: 2021-04-10</li>
     <li>Draft #1 published: 2021-02-09</li>
+    <li>Withdrawn: 2021-04-20
+      <p>See the <a href="#withdrawal-notice">Withdrawal notice</a> below for
+	the author's explanation  of his decision to withdraw this SRFI.</p></li>
   </ul>
   <h2>Abstract</h2>
   <p>Many language-agnostic programming tools rely on specially
@@ -30,7 +32,7 @@
   S-expressions in Scheme, combining the portability of magic
   comments with the well-defined syntax and easy parsing of
   ordinary Scheme code.</p>
-  <h2>Withdrawal notice</h2>
+  <h2 id="withdrawal-notice">Withdrawal notice</h2>
   <p>While this SRFI solves the problem it set out to solve, and
   could be used as-is, the mailing list disagreed with it on
   aesthetic grounds. No maintainers of established Scheme
@@ -43,7 +45,7 @@
     <li>Whether source code comments should ever be parsed or
     not.</li>
     <li>Whether magic comments are a horrible aesthetic blemish or
-    an acceptable tradeoff to embed external syntax into a
+    an acceptable trade-off to embed external syntax into a
     programming language.</li>
     <li>Whether Scheme's <code>#!</code> read syntax should be kept
     strictly for Scheme datums or overloaded to also handle
